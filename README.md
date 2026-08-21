@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CI/CD Study
 
-## Getting Started
+Next.js アプリケーションを題材に、GitHub Actions と Vercel を使用した
+CI/CD パイプラインを構築した学習プロジェクトです。
 
-First, run the development server:
+## 概要
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+GitHub の `main` ブランチへの push をトリガーとして GitHub Actions
+を起動し、コードの検証から Vercel
+への本番デプロイまでを自動化しています。
+
+``` text
+Local
+  ↓ git push
+GitHub / main
+  ↓
+GitHub Actions
+  ├─ npm ci
+  ├─ ESLint
+  ├─ TypeScript Type Check
+  └─ Next.js Build
+  ↓
+All checks passed
+  ↓
+Vercel Production Deploy
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## CI/CD Pipeline
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+GitHub Actions では以下の処理を順番に実行します。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1.  Repository Checkout
+2.  Node.js セットアップ
+3.  依存関係のインストール（`npm ci`）
+4.  ESLint による静的解析
+5.  TypeScript の型チェック（`tsc --noEmit`）
+6.  Next.js の Production Build
+7.  Vercel CLI のセットアップ
+8.  Vercel Production への自動デプロイ
 
-## Learn More
+Lint・Type Check・Build
+のいずれかが失敗した場合は、後続のデプロイ処理を実行しない構成にしています。
 
-To learn more about Next.js, take a look at the following resources:
+## Workflow
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+GitHub Actions の Workflow は以下に定義しています。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`.github/workflows/ci.yml`
 
-## Deploy on Vercel
+`main` ブランチへの push をトリガーに実行されます。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Secrets
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Vercel へのデプロイに必要な認証情報はコード内に直接記述せず、GitHub
+Actions の Repository Secrets で管理しています。
+
+-   `VERCEL_TOKEN`
+-   `VERCEL_ORG_ID`
+-   `VERCEL_PROJECT_ID`
+
+Workflow から `${{ secrets.* }}`
+を利用して参照することで、認証情報をリポジトリ上に公開しない構成にしています。
+
+## 実際に確認したこと
+
+CI/CD 構築時には TypeScript の型エラーにより Type Check が失敗し、Build
+以降の処理が停止することを確認しました。
+
+エラー修正後に再度 push し、
+
+`Lint → Type Check → Build → Deploy`
+
+の全工程が正常終了し、Vercel Production
+への自動デプロイが実行されることを確認しています。
+
+## 使用技術
+
+-   Next.js
+-   React
+-   TypeScript
+-   Node.js
+-   npm
+-   ESLint
+-   Git / GitHub
+-   GitHub Actions
+-   Vercel
+-   Vercel CLI
+
+## 学習目的
+
+CI/CD の概念を理解するだけでなく、実際にパイプラインを構築し、
+
+-   Git の push を起点とした自動処理
+-   CI によるコード品質チェック
+-   エラー発生時のパイプライン停止
+-   Secrets を利用した認証情報管理
+-   CI 成功後の Production 自動デプロイ
+
+までを一連の流れとして実装・確認することを目的としています。
